@@ -112,6 +112,28 @@ Mendukung bahasa Indonesia dan Inggris"""
         tk.Label(page_frame, text="Page:").pack(side=tk.LEFT)
         self.page_spinbox = tk.Spinbox(page_frame, from_=1, to=1, width=5)
         self.page_spinbox.pack(side=tk.LEFT, padx=5)
+        
+        # Di dalam create_widgets(), setelah membuat page_spinbox
+        self.page_spinbox.bind('<Return>', lambda event: self.go_to_page())
+
+        # Tambahkan method baru
+        def go_to_page(self):
+            try:
+                page_num = int(self.page_spinbox.get()) - 1
+                if 0 <= page_num < self.total_pages:
+                    self.display_page(page_num)
+            except ValueError:
+                pass
+        
+        nav_frame = tk.Frame(main_frame)
+        nav_frame.pack(fill=tk.X, pady=5)
+
+        self.prev_button = tk.Button(nav_frame, text="← Previous", command=self.prev_page)
+        self.prev_button.pack(side=tk.LEFT, padx=5)
+
+        self.next_button = tk.Button(nav_frame, text="Next →", command=self.next_page)
+        self.next_button.pack(side=tk.LEFT, padx=5)
+        
         self.total_pages_label = tk.Label(page_frame, text=f"of {self.total_pages}")
         self.total_pages_label.pack(side=tk.LEFT)
         
@@ -169,6 +191,20 @@ Mendukung bahasa Indonesia dan Inggris"""
         self.status_var = tk.StringVar()
         self.status_var.set("Please select a PDF file")
         tk.Label(main_frame, textvariable=self.status_var, bd=1, relief=tk.SUNKEN, anchor=tk.W).pack(fill=tk.X)
+        
+    def prev_page(self):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.display_page(self.current_page)
+            self.page_spinbox.delete(0, tk.END)
+            self.page_spinbox.insert(0, str(self.current_page + 1))
+
+    def next_page(self):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self.display_page(self.current_page)
+            self.page_spinbox.delete(0, tk.END)
+            self.page_spinbox.insert(0, str(self.current_page + 1))
     
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
@@ -202,10 +238,22 @@ Mendukung bahasa Indonesia dan Inggris"""
     def display_page(self, page_num):
         if 0 <= page_num < self.total_pages:
             self.current_page = page_num
+            # Update spinbox value
             self.page_spinbox.delete(0, tk.END)
             self.page_spinbox.insert(0, str(page_num + 1))
+            # Clear and display new text
             self.text_display.delete(1.0, tk.END)
             self.text_display.insert(tk.END, self.pdf_text.get(page_num, ""))
+            
+            # Update button states
+            self.prev_button.config(state=tk.NORMAL if page_num > 0 else tk.DISABLED)
+            self.next_button.config(state=tk.NORMAL if page_num < self.total_pages - 1 else tk.DISABLED)
+            
+            # Update status
+            if self.language == "id":
+                self.status_var.set(f"Menampilkan halaman {page_num + 1} dari {self.total_pages}")
+            else:
+                self.status_var.set(f"Showing page {page_num + 1} of {self.total_pages}")
     
     def play_page(self):
         if not self.pdf_text:
